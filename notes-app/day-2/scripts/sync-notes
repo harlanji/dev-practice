@@ -1,0 +1,3 @@
+#!/bin/bash
+
+lsyncd -nodaemon lsyncd-notes.config
