@@ -1,0 +1,116 @@
+<html>
+<head>
+<script src="vtt.js"></script>
+<script>
+
+function playbackCaptions (url) {
+  var captions = document.querySelector(".captions");
+
+  fetch(url)
+    .then(function (r) { return r.text(); })
+    .then(function (vttContent) {
+
+
+    var parser = new WebVTT.Parser(window, WebVTT.StringDecoder()),
+        cues = [],
+        regions = [];
+    parser.oncue = function(cue) {
+      cues.push(cue);
+    };
+    parser.onregion = function(region) {
+      regions.push(region);
+    }
+    parser.parse(vttContent);
+    parser.flush();
+
+    function removeCaption (i, div, divs) {
+      console.log("removeCaption: " + i);
+      div.remove();
+
+      if (divs) {
+        debugger;
+      }
+    }
+
+    function insertCaption (i) {
+      var c = cues[i];
+
+      var div = WebVTT.convertCueToDOMTree(window, c.text);
+      var divs = WebVTT.processCues(window, [c], captions);
+
+      setTimeout(removeCaption,
+                 (c.endTime - c.startTime) * 1000,
+                 i, div, divs);
+
+      var nextI = i + 1;
+      if (nextI < cues.length) {
+        setTimeout(insertCaption,
+                   (cues[nextI].startTime - c.startTime) * 1000,
+                   nextI);
+      }
+    }
+
+    if (cues.length) {
+      var i = 0;
+      setTimeout(insertCaption, cues[i].startTime * 1000, i);
+    }
+
+
+
+
+
+    });
+
+}
+
+function playbackChat (url) {
+  var chatLog = document.querySelector(".chat-log");
+
+  fetch(url)
+    .then(function (r) { return r.json(); })
+    .then(function (chatEvents) {
+
+      function appendNextEvent (i) {
+        var e = chatEvents[i];
+
+        var chatEntry = document.createElement("div");
+        chatEntry.textContent = e.time_text + " - " + e.author.name + ": " + e.message;
+        chatLog.appendChild(chatEntry);
+        chatLog.scrollIntoView(false, {behavior: "smooth"});
+
+
+        var nextI = i + 1;
+        if (nextI < chatEvents.length) {
+          setTimeout(appendNextEvent,
+                     (chatEvents[nextI].time_in_seconds - e.time_in_seconds) * 1000,
+                     nextI);          
+        }
+      }
+
+      if(chatEvents.length) {
+        var i = 0;
+        setTimeout(appendNextEvent, chatEvents[i].time_in_seconds * 1000, i);
+      }
+
+    });
+
+}
+
+</script>
+</head>
+<body>
+<div class="chat-log">
+
+</div>
+<div class="captions" style="position: fixed; height: 100%; width: 100%; bottom: 0;">
+
+</div>
+
+
+<script>
+  playbackChat("yt-zOwzHrfkkZo-live.json");
+  playbackCaptions("Mainstream_is_now_a_fantasy_world-zOwzHrfkkZo.en.vtt");
+</script>
+</body>
+</html>
+
