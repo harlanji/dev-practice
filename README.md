@@ -8,6 +8,7 @@ As-is, not for production use.
 
 Please pardon the inconsistent layouts over time and README format/quality.
 
+The commit history provides brief messages that can help navigate the repo with a focus for each commit.
 
 ## Direction
 
