@@ -1,0 +1,13 @@
+{
+	"credentials": {
+		"client_id": "",
+		"client_secret": "",
+		"refresh_token": "",
+		"scopes": ["https://www.googleapis.com/auth/youtube.force-ssl"],
+		"token": "",
+		"token_uri": "https://oauth2.googleapis.com/token"},
+		"display_name": "HarlanJI",
+		"id": "UCX7yXeFV78vXwMX4uanMldQ",
+		"username": "harlanji"
+		}
+}
