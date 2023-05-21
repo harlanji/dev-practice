@@ -1,0 +1,6 @@
+Added link and feedLink to each item and use them together as the unique ID
+of an item in the dataset. We use the update method on datasets instead
+of add to take into account the IDs, and we also check if the sunrise times
+already exist before adding.
+
+

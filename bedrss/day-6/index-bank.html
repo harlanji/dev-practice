@@ -1,0 +1,567 @@
+<html>
+  <head>
+
+<script>
+
+
+// Bed
+
+function importRssFeed (feedUrl) {
+
+  var rssRequest = new XMLHttpRequest();
+
+
+  rssRequest.onreadystatechange = function (e) {
+    var r = rssRequest;
+    if (r.readyState == XMLHttpRequest.DONE) {
+      if (r.status >= 200 && r.status < 300) {
+        console.log("Got RSS (" + r.status + "): ");
+
+
+        var items = importRSSDoc(r.responseXML);
+        populateItems( items );
+        createPlot( items );
+
+        importTvFeed( "https://harlanji.com/tv.xml" );
+
+      }
+    }
+  };
+
+  //rssRequest.open("GET", "bed-harlanji.xml");
+
+  rssRequest.open("GET", feedUrl);
+  rssRequest.send();
+
+}
+
+function importRSSDoc( rssDoc ) {
+  console.log("importRSSDoc:");
+  console.log( rssDoc );
+
+  var feedLink = rssDoc.querySelector("link").textContent.trim();
+
+  var items = Array.from( rssDoc.querySelectorAll("item") );
+  items = items.map(function (i) {
+    var item = {
+      title: i.querySelector("title").textContent.trim(),
+      date: new Date( i.querySelector("pubDate").textContent.trim() ),
+      description: i.querySelector("description").textContent.trim(),
+
+      link: i.querySelector("link").textContent.trim(),
+      feedLink: feedLink
+    };
+
+    var occurenceParts = splitString( item.description, ":", 2);
+
+
+    item.occurence = parseInt( occurenceParts[0] ) || 1;
+    item.occurenceNote = occurenceParts[1].trim();
+
+    if (item.occurenceNote == "") {
+      item.occurenceNote = "Morning routine";
+    }
+
+    return item;
+  });
+
+
+  items = items.sort(function (a, b) {
+    return b.date - a.date;
+  });
+
+  console.log("items:");
+  console.log(items);
+
+  return items;
+}
+
+
+function populateItems( items ) {
+  console.log("populateItems");
+  console.log( items );
+
+  var rows = items.map(function (item) {
+    var row = document.createElement( "tr" );
+    var date = document.createElement( "td" );
+    var occurence = document.createElement( "td" );
+    var note = document.createElement( "td" );
+
+    date.textContent = dateString( item.date );
+    occurence.textContent = item.occurence;
+    note.textContent = item.occurenceNote;
+
+    row.appendChild( date );
+    row.appendChild( occurence );
+    row.appendChild( note );
+
+    return row;
+  });
+
+  var tableBody = document.querySelector("#bed-makings tbody");
+  console.log("populate: ");
+  console.log(tableBody);
+  console.log(rows);
+
+  while (tableBody.lastChild) {
+    tableBody.removeChild(tableBody.lastChild);
+  }
+
+  rows.forEach(function (row) {
+    tableBody.appendChild(row);
+  });
+}
+
+var dataset;
+
+function initDataset () {
+  dataset = new vis.DataSet();
+}
+
+var groups = [];
+function groupFor (str) {
+  var idx = groups.indexOf(str);
+  if (idx == -1) {
+    idx = groups.length;
+    groups.push(str);
+  }
+
+  return idx;
+}
+
+function createPlot ( feedItems ) {
+
+  console.log("createPlot");
+
+
+
+  var container = document.getElementById('visualization');
+
+  while( container.lastChild ) {
+    container.removeChild( container.lastChild );
+  }
+
+  
+  if (feedItems.length == 0) {
+    return;
+  }
+
+  var items = feedItems.map(function (item) {
+     var startDate = startOfDay(item.date);
+
+     return {
+       x: startDate,
+       y: (item.date - startDate) / (1000 * 60),
+
+       group: groupFor(item.feedLink),
+       id: item.feedLink + item.link
+     };
+  });
+
+  // feed items are in descending order
+  var firstDate = startOfDay( feedItems[ feedItems.length - 1 ].date );
+  var lastDate = startOfDay( feedItems[ 0 ].date );
+
+  var currentFirstDate = dataset.get("firstDateSunrise");
+  if (!currentFirstDate || currentFirstDate.x > firstDate) {
+    var firstTimes = SunCalc.getTimes(firstDate, 44.986656, -93.258133)
+    items.push({id: "firstDateSunrise",
+                x: firstDate,
+                y: (firstTimes.sunrise - firstDate) / (1000 * 60),
+                group: groupFor("sunrise")});
+  }
+
+
+  var currentLastDate = dataset.get("lastDateSunrise");
+  if (!currentLastDate || currentLastDate.x < lastDate) {
+    var lastTimes = SunCalc.getTimes(lastDate, 44.986656, -93.258133)
+  
+
+    items.push({id: "lastDateSunrise",
+                x: lastDate,
+                y: (lastTimes.sunrise - lastDate) / (1000 * 60),
+                group: groupFor("sunrise")});
+  }
+
+  dataset.update(items);
+
+  var options = {
+      sort: false,
+      sampling:false,
+      style:'points',
+      dataAxis: {
+          left: {
+              range: {
+                  min: 0, max: (60 * 24)
+              }
+          }
+      },
+      drawPoints: {
+          enabled: true,
+          size: 6,
+          style: 'circle' // square, circle
+      },
+      defaultGroup: 'Scatterplot',
+      height: '400px',
+      width: '90%'
+  };
+
+  var graph2d = new vis.Graph2d(container, dataset, options);
+
+
+  // sunrise is the earliest and latest feed items
+  var windowStartDate = new Date(dataset.get("firstDateSunrise").x);
+  var windowEndDate = new Date(dataset.get("lastDateSunrise").x);
+
+  // day before first and after the latest day
+  windowStartDate.setDate( windowStartDate.getDate() - 1 );
+  windowEndDate.setDate( windowEndDate.getDate() + 1 );
+
+  graph2d.setWindow(windowStartDate, windowEndDate, {animation: false});
+
+}
+
+
+
+// TV
+
+
+
+function importTvFeed (feedUrl) {
+
+  var rssRequest = new XMLHttpRequest();
+
+
+  rssRequest.onreadystatechange = function (e) {
+    var r = rssRequest;
+    if (r.readyState == XMLHttpRequest.DONE) {
+      if (r.status >= 200 && r.status < 300) {
+        console.log("Got TV RSS (" + r.status + "): ");
+
+        var items = importTvDoc(r.responseXML);
+        addTvToPlot( items );
+      }
+    }
+  };
+
+  //rssRequest.open("GET", "bed-harlanji.xml");
+
+  rssRequest.open("GET", feedUrl);
+  rssRequest.send();
+
+}
+
+function importTvDoc( rssDoc ) {
+  console.log("importTvDoc:");
+  console.log( rssDoc );
+
+
+  var items = Array.from( rssDoc.querySelectorAll("item") );
+  items = items.map(function (i) {
+
+    var title = i.querySelector("title").textContent.trim();
+    var state = title.indexOf("on") > -1;
+
+    var item = {
+      title: title,
+      state: state,
+      date: new Date( i.querySelector("pubDate").textContent.trim() ),
+      description: i.querySelector("description").textContent.trim()
+    };
+
+    return item;
+  });
+
+  items = items.sort(function (a, b) {
+    return b.date - a.date;
+  });
+
+  console.log("tv items:");
+  console.log(items);
+
+  return items;
+}
+
+
+
+
+// Steps CSV
+
+function importStepsFeed (feedUrl) {
+
+  var rssRequest = new XMLHttpRequest();
+
+
+  rssRequest.onreadystatechange = function (e) {
+    var r = rssRequest;
+    if (r.readyState == XMLHttpRequest.DONE) {
+      if (r.status >= 200 && r.status < 300) {
+        var parseHeader = true;
+        console.log("Got Steps CSV (" + r.status + ", parseHeader=" + parseHeader + "): ");
+
+        var items = r.responseText.split("\n")
+          .map(function (line) { return line.trim(); })
+          .filter(function (line, i) { return !(parseHeader && i == 0) && line != ""; })
+          .map(function (line, i, arr) {
+            var parts = line.split(",");
+            var date = new Date(parts[0]),
+                steps = parseInt(parts[1]);
+
+            return {
+              date: date,
+              steps: steps
+            }            
+          });
+
+
+        addStepsToPlot( items );
+      }
+    }
+  };
+
+  //rssRequest.open("GET", "bed-harlanji.xml");
+
+  rssRequest.open("GET", feedUrl);
+  rssRequest.send();
+
+}
+
+// Bank CSV
+
+function importBnkFeed (feedUrl) {
+
+  var rssRequest = new XMLHttpRequest();
+
+
+  rssRequest.onreadystatechange = function (e) {
+    var r = rssRequest;
+    if (r.readyState == XMLHttpRequest.DONE) {
+      if (r.status >= 200 && r.status < 300) {
+        var parseHeader = true;
+        console.log("Got Bank CSV (" + r.status + ", parseHeader=" + parseHeader + "): ");
+
+        var items = r.responseText.split("\n")
+          .map(function (line) { return line.trim(); })
+          .filter(function (line, i) { return !(parseHeader && i == 0) && line != ""; })
+          .map(function (line, i, arr) {
+            var parts = line.split(",");
+            var date = new Date(parts[0]),
+                amt = parseInt(parts[1]),
+                from = parts[2];
+
+            return {
+              date: date,
+              amt: amt,
+              from: from
+            }            
+          })
+          .filter(function (item) { return item.from == 'mi';  });
+
+
+        addBankToPlot( items );
+      }
+    }
+  };
+
+  //rssRequest.open("GET", "bed-harlanji.xml");
+
+  rssRequest.open("GET", feedUrl);
+  rssRequest.send();
+
+}
+
+
+function dateString (date) {
+//  return "d: " + date;
+
+  var str = (date.getYear() + 1900) + "-"
+              + new String(date.getMonth() + 1).padStart(2, "0") + "-"
+              + new String(date.getDate()).padStart(2, "0") + " "
+              + new String(date.getHours()).padStart(2, "0") + ":"
+              + new String(date.getMinutes()).padStart(2, "0") + ":"
+              + new String(date.getSeconds()).padStart(2, "0") + " ";
+
+  var tzOffset = date.getTimezoneOffset() / 60;
+
+  if (tzOffset >= 0) {
+    str += "+";
+  }
+
+  str += new String(tzOffset * 100).padStart(4, "0");
+           
+
+  return str;
+}
+
+
+
+
+function addStepsToPlot ( feedItems ) {
+
+  console.log("addStepsToPlot");
+
+
+  var items = feedItems.map(function (item) {
+     var startDate = startOfDay(item.date);
+     var group = 99;
+
+     return {
+       x: startDate,
+       y: item.steps / 8, // fixme: normalize over 1440 seconds
+       group: group,
+       id: "steps-" + item.date
+     };
+  });
+
+  dataset.update( items );
+}
+
+function addBankToPlot ( feedItems ) {
+
+  console.log("addBankToPlot");
+
+
+  var items = feedItems.map(function (item) {
+     var startDate = startOfDay(item.date);
+     var group = 199;
+
+     return {
+       x: startDate,
+       y: item.amt <= 1440 ? item.amt : 1440, // fixme: normalize over 1440 seconds
+       group: group,
+       id: "bank-" + item.date
+     };
+  });
+
+  dataset.update( items );
+}
+
+
+function addTvToPlot ( feedItems ) {
+
+  console.log("addTvToPlot");
+
+
+  var items = feedItems.map(function (item) {
+     var startDate = startOfDay(item.date);
+     var group = item.state ? 3 : 4;
+
+     return {
+       x: startDate,
+       y: (item.date - startDate) / (1000 * 60),
+       group: group
+     };
+  });
+
+  dataset.add( items );
+}
+
+
+
+function splitString(string, delimiter, n) {
+    var parts = string.split(delimiter);
+    return parts.slice(0, n - 1).concat([parts.slice(n - 1).join(delimiter)]);
+}
+
+</script>
+
+
+  <script src="vis-timeline-graph2d.min.js"></script>
+  <link href="vis-timeline-graph2d.min.css" rel="stylesheet" type="text/css" />
+
+  <script src="suncalc.js"></script>
+
+  </head>
+  <body>
+
+<script>
+
+function importAuthorSubmitted( form ) {
+  console.log("submitted:");
+
+  console.log(form);
+}
+
+var authors = {
+  "HarlanJI": "https://harlanji.com/bed.xml",
+  "Marty": "https://harlanji.com/bed-marty.xml"
+}
+
+function populateAuthors () {
+  var authorsElem = document.querySelector("#author");
+
+  while(authorsElem.lastChild) {
+    authorsElem.removeChild(authorsElem.lastChild);
+  }
+
+  Object.entries(authors).forEach(function (e, i) {
+    var option = document.createElement("option");
+    option.value = e[1];
+    option.textContent = e[0];
+
+    if ( i == 0 ) {
+      option.selected = "selected";
+    }
+
+    authorsElem.appendChild(option);
+
+    console.log(e);
+  });
+
+  authorsElem.dispatchEvent(new Event('change'));
+}
+
+function startOfDay (date) {
+  var startDate = new Date(date);
+
+  startDate.setHours(0);
+  startDate.setMinutes(0);
+  startDate.setSeconds(0);
+  startDate.setMilliseconds(0);
+
+  return startDate;
+}
+
+
+
+</script>
+
+<h1>Author Made Bed</h1>
+
+
+
+<form id="import-author" action="#" onsubmit="console.log('s')">
+<p>
+Author:
+<select id="author" onchange="importRssFeed(this.options[this.selectedIndex].value)">
+</select>
+
+</p>
+</form>
+
+<div id="visualization"></div>
+
+<table id="bed-makings">
+  <thead>
+    <tr>
+      <th>Date Time</th>
+      <th>#</th>
+      <th>Note</th>
+    </tr>
+  </thead>
+  <tbody>
+  </tbody>
+</table>
+
+
+<script>
+
+//importRssFeed( document.querySelector("#author").value );
+
+populateAuthors();
+initDataset();
+
+</script>
+
+  </body>
+</html>

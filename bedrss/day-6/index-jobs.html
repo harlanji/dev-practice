@@ -1,0 +1,684 @@
+<html>
+  <head>
+
+<script>
+
+function setupWindowSync () {
+  graph2d.on('rangechanged', function (r) {
+    if (timeline) {
+      timeline.setWindow(r);
+    }
+    if (barChart) {
+      barChart.setWindow(r);
+    }
+  });
+}
+
+
+
+// Bar Chart Underlay
+var barChart;
+function createBarChart () {
+
+    var container = document.getElementById('visualization3');
+    var items = [
+    {id: 8, content: 'job 6', y: 55, x: '2006-03-01', end: '2007-11-20', group: 1},
+    {id: 1, content: 'job 7', y: 65, x: '2011-05-20', end: '2012-12-20', group: 1},
+    {id: 2, content: 'job 8', y: 166.4, x: '2013-05-01', end: '2013-11-15', group: 1},
+    {id: 3, content: 'job 9', y: 135, x: '2014-01-03', end: '2014-03-15', group: 1},
+    {id: 4, content: 'job 10', y: 145, x: '2014-03-21', end: '2016-04-01', group: 1},
+    {id: 5, content: 'job 11', y: 195, x: '2016-06-01', end: '2016-08-15', group: 1},
+    {id: 6, content: 'job 12', y: 145, x: '2016-12-01', end: '2017-05-01', group: 1},
+    {id: 7, content: 'job 13', y: 155, x: '2017-08-01', end: '2017-11-30', group: 1},
+
+
+    {id: 100, content: 'credit 1', y: 160, x: '2006-01-01', end: '2017-02-28', group: 2},
+    {id: 101, content: 'credit 2', y: 120, x: '2017-02-28', end: '2018-11-30', group: 2},
+    {id: 102, content: 'credit 3', y: 90, x: '2018-11-30', end: '2019-11-30', group: 2},
+    {id: 104, content: 'credit 5', y: 50, x: '2019-11-30', end: '2020-11-30', group: 2},
+    {id: 105, content: 'credit 6', y: 30, x: '2020-11-30', end: '2021-11-30', group: 2}
+
+    ];
+
+    var dataset = new vis.DataSet(items);
+    var options = {
+        style:'bar',
+        drawPoints: false,
+        dataAxis: {
+              width: '88px',
+         //     visible: false,
+            icons:true
+        },
+        graphHeight: '400px',
+
+        width: '90%',
+        orientation:'none'
+    };
+    barChart = new vis.Graph2d(container, items, options);
+
+}
+
+// Timeline
+
+var timeline;
+
+function createTimeline () {
+  // DOM element where the Timeline will be attached
+  var container = document.getElementById('visualization2');
+
+  // Create a DataSet (allows two way data-binding)
+  var items = new vis.DataSet([
+    {id: 8, content: 'job 6', start: '2006-03-01', end: '2007-11-20', group: 1},
+    {id: 1, content: 'job 7', start: '2011-05-20', end: '2012-12-20', group: 1},
+    {id: 2, content: 'job 8', start: '2013-05-01', end: '2013-11-15', group: 1},
+    {id: 3, content: 'job 9', start: '2014-01-03', end: '2014-03-15', group: 1},
+    {id: 4, content: 'job 10', start: '2014-03-21', end: '2016-04-01', group: 1},
+    {id: 5, content: 'job 11', start: '2016-06-01', end: '2016-08-15', group: 1},
+    {id: 6, content: 'job 12', start: '2016-12-01', end: '2017-05-01', group: 1},
+    {id: 7, content: 'job 13', start: '2017-08-01', end: '2017-11-30', group: 1},
+
+    {id: 100, content: 'friend 1', start: '2005-01-01', end: '2017-09-01', group: 2},
+    {id: 101, content: 'friend 2', start: '2005-06-01', end: '2015-03-01', group: 2},
+    {id: 102, content: 'friend 3', start: '2005-01-01', end: '2017-09-01', group: 2},
+
+    {id: 201, content: 'school 3', start: '2008-01-15', end: '2011-05-01', group: 3},
+
+    {id: 1001, content: 'project 1', start: '2007-06-15', end: '2009-01-01', group: 4, editable: true},
+
+    {id: 2001, content: 'loc 1', start: '1985-01-24', end: '2011-05-01', group: 5},
+    {id: 2002, content: 'loc 2', start: '2011-05-15', end: '2012-12-01', group: 5},
+
+    {id: 6000, content: 'fulton', start: '2014-01-03', end: '2016-03-01', group: 6},
+    {id: 6001, content: '48th ave', start: '2016-03-01', end: '2018-06-01', group: 6},
+    {id: 6010, content: 'civic', start: '2018-06-01', end: '2021-08-01', group: 6},
+    {id: 6020, content: 'relative', start: '2021-08-01', end: '2021-12-01', group: 6}
+  ]);
+
+  var groups = new vis.DataSet([
+    {id: 1, content: 'Jobs', order: 5},
+    {id: 2, content: 'Friends', order: 6},
+    {id: 3, content: 'Schools', order: 4},
+    {id: 4, content: 'Projects', order: 3},
+    {id: 5, content: 'Locations', order: 1},
+    {id: 6, content: 'Housing', order: 2}
+  ]);
+
+  // Configuration for the Timeline
+  var options = {
+    width: '90%',
+    groupOrder: 'order'
+  };
+
+  // Create a Timeline
+  timeline = new vis.Timeline(container, items, groups, options);
+
+}
+
+// Tweet storm summaries
+
+function importTweetStormSummaries (feedUrl) {
+
+
+  fetch( feedUrl )
+    .then(function (res) {
+      return res.json();
+    })
+    .then(function (storms) {
+      var items = storms.map(function (s) {
+        var dt = new Date(s.datetime);
+        var dayStart = startOfDay(dt);
+        return {
+          id: "tweet-storm_" + dt,
+          x: dayStart,
+          y: (dt - dayStart) / (1000 * 60)
+        };
+      });
+
+      return items;
+    })
+    .then(function (items) {
+      dataset.update(items);
+    });
+}
+
+
+// Bed
+
+function importRssFeed (feedUrl) {
+
+  var rssRequest = new XMLHttpRequest();
+
+
+  rssRequest.onreadystatechange = function (e) {
+    var r = rssRequest;
+    if (r.readyState == XMLHttpRequest.DONE) {
+      if (r.status >= 200 && r.status < 300) {
+        console.log("Got RSS (" + r.status + "): ");
+
+
+        var items = importRSSDoc(r.responseXML);
+        populateItems( items );
+        createPlot( items );
+
+        importTvFeed( "https://harlanji.com/tv.xml" );
+
+      }
+    }
+  };
+
+  //rssRequest.open("GET", "bed-harlanji.xml");
+
+  rssRequest.open("GET", feedUrl);
+  rssRequest.send();
+
+}
+
+function importRSSDoc( rssDoc ) {
+  console.log("importRSSDoc:");
+  console.log( rssDoc );
+
+  var feedLink = rssDoc.querySelector("link").textContent.trim();
+
+  var items = Array.from( rssDoc.querySelectorAll("item") );
+  items = items.map(function (i) {
+    var item = {
+      title: i.querySelector("title").textContent.trim(),
+      date: new Date( i.querySelector("pubDate").textContent.trim() ),
+      description: i.querySelector("description").textContent.trim(),
+
+      link: i.querySelector("link").textContent.trim(),
+      feedLink: feedLink
+    };
+
+    var occurenceParts = splitString( item.description, ":", 2);
+
+
+    item.occurence = parseInt( occurenceParts[0] ) || 1;
+    item.occurenceNote = occurenceParts[1].trim();
+
+    if (item.occurenceNote == "") {
+      item.occurenceNote = "Morning routine";
+    }
+
+    return item;
+  });
+
+
+  items = items.sort(function (a, b) {
+    return b.date - a.date;
+  });
+
+  console.log("items:");
+  console.log(items);
+
+  return items;
+}
+
+
+function populateItems( items ) {
+  console.log("populateItems");
+  console.log( items );
+
+  var rows = items.map(function (item) {
+    var row = document.createElement( "tr" );
+    var date = document.createElement( "td" );
+    var occurence = document.createElement( "td" );
+    var note = document.createElement( "td" );
+
+    date.textContent = dateString( item.date );
+    occurence.textContent = item.occurence;
+    note.textContent = item.occurenceNote;
+
+    row.appendChild( date );
+    row.appendChild( occurence );
+    row.appendChild( note );
+
+    return row;
+  });
+
+  var tableBody = document.querySelector("#bed-makings tbody");
+  console.log("populate: ");
+  console.log(tableBody);
+  console.log(rows);
+
+  while (tableBody.lastChild) {
+    tableBody.removeChild(tableBody.lastChild);
+  }
+
+  rows.forEach(function (row) {
+    tableBody.appendChild(row);
+  });
+}
+
+var dataset;
+
+function initDataset () {
+  dataset = new vis.DataSet();
+}
+
+var groups = [];
+function groupFor (str) {
+  var idx = groups.indexOf(str);
+  if (idx == -1) {
+    idx = groups.length;
+    groups.push(str);
+  }
+
+  return idx;
+}
+
+var graph2d;
+
+function createPlot ( feedItems ) {
+
+  console.log("createPlot");
+
+
+
+  var container = document.getElementById('visualization');
+
+  while( container.lastChild ) {
+    container.removeChild( container.lastChild );
+  }
+
+  
+  if (feedItems.length == 0) {
+    return;
+  }
+
+
+  var items = feedItems.map(function (item) {
+     var startDate = startOfDay(item.date);
+
+     return {
+       x: startDate,
+       y: (item.date - startDate) / (1000 * 60),
+
+       group: groupFor(item.feedLink),
+       id: item.feedLink + item.link
+     };
+  });
+
+  // feed items are in descending order
+  var firstDate = startOfDay( feedItems[ feedItems.length - 1 ].date );
+  var lastDate = startOfDay( feedItems[ 0 ].date );
+
+  var currentFirstDate = dataset.get("firstDateSunrise");
+  if (!currentFirstDate || currentFirstDate.x > firstDate) {
+    var firstTimes = SunCalc.getTimes(firstDate, 44.986656, -93.258133)
+    items.push({id: "firstDateSunrise",
+                x: firstDate,
+                y: (firstTimes.sunrise - firstDate) / (1000 * 60),
+                group: groupFor("sunrise")});
+  }
+
+
+  var currentLastDate = dataset.get("lastDateSunrise");
+  if (!currentLastDate || currentLastDate.x < lastDate) {
+    var lastTimes = SunCalc.getTimes(lastDate, 44.986656, -93.258133)
+  
+
+    items.push({id: "lastDateSunrise",
+                x: lastDate,
+                y: (lastTimes.sunrise - lastDate) / (1000 * 60),
+                group: groupFor("sunrise")});
+  }
+
+  dataset.update(items);
+
+  var options = {
+      sort: false,
+      sampling:false,
+      style:'points',
+      dataAxis: {
+              width: '88px',
+
+          //visible: false,
+          left: {
+              range: {
+                  min: 0, max: (60 * 24)
+              }
+          }
+      },  
+      drawPoints: {
+          enabled: true,
+          size: 6,
+          style: 'circle' // square, circle
+      },
+      defaultGroup: 'Scatterplot',
+      graphHeight: '400px',
+      width: '90%'
+  };
+
+  graph2d = new vis.Graph2d(container, dataset, options);
+
+
+
+
+  // sunrise is the earliest and latest feed items
+  var windowStartDate = new Date(dataset.get("firstDateSunrise").x);
+  var windowEndDate = new Date(dataset.get("lastDateSunrise").x);
+
+  // day before first and after the latest day
+  windowStartDate.setDate( windowStartDate.getDate() - 1 );
+  windowEndDate.setDate( windowEndDate.getDate() + 1 );
+
+  graph2d.setWindow(windowStartDate, windowEndDate, {animation: false});
+
+}
+
+
+
+// TV
+
+
+
+function importTvFeed (feedUrl) {
+
+  var rssRequest = new XMLHttpRequest();
+
+
+  rssRequest.onreadystatechange = function (e) {
+    var r = rssRequest;
+    if (r.readyState == XMLHttpRequest.DONE) {
+      if (r.status >= 200 && r.status < 300) {
+        console.log("Got TV RSS (" + r.status + "): ");
+
+        var items = importTvDoc(r.responseXML);
+        addTvToPlot( items );
+      }
+    }
+  };
+
+  //rssRequest.open("GET", "bed-harlanji.xml");
+
+  rssRequest.open("GET", feedUrl);
+  rssRequest.send();
+
+}
+
+function importTvDoc( rssDoc ) {
+  console.log("importTvDoc:");
+  console.log( rssDoc );
+
+
+  var items = Array.from( rssDoc.querySelectorAll("item") );
+  items = items.map(function (i) {
+
+    var title = i.querySelector("title").textContent.trim();
+    var state = title.indexOf("on") > -1;
+
+    var item = {
+      title: title,
+      state: state,
+      date: new Date( i.querySelector("pubDate").textContent.trim() ),
+      description: i.querySelector("description").textContent.trim()
+    };
+
+    return item;
+  });
+
+  items = items.sort(function (a, b) {
+    return b.date - a.date;
+  });
+
+  console.log("tv items:");
+  console.log(items);
+
+  return items;
+}
+
+
+
+
+// Steps CSV
+
+function importStepsFeed (feedUrl) {
+
+  var rssRequest = new XMLHttpRequest();
+
+
+  rssRequest.onreadystatechange = function (e) {
+    var r = rssRequest;
+    if (r.readyState == XMLHttpRequest.DONE) {
+      if (r.status >= 200 && r.status < 300) {
+        var parseHeader = true;
+        console.log("Got Steps CSV (" + r.status + ", parseHeader=" + parseHeader + "): ");
+
+        var items = r.responseText.split("\n")
+          .map(function (line) { return line.trim(); })
+          .filter(function (line, i) { return !(parseHeader && i == 0) && line != ""; })
+          .map(function (line, i, arr) {
+            var parts = line.split(",");
+            var date = new Date(parts[0]),
+                steps = parseInt(parts[1]);
+
+            return {
+              date: date,
+              steps: steps
+            }            
+          });
+
+
+        addStepsToPlot( items );
+      }
+    }
+  };
+
+  //rssRequest.open("GET", "bed-harlanji.xml");
+
+  rssRequest.open("GET", feedUrl);
+  rssRequest.send();
+
+}
+
+
+function dateString (date) {
+//  return "d: " + date;
+
+  var str = (date.getYear() + 1900) + "-"
+              + new String(date.getMonth() + 1).padStart(2, "0") + "-"
+              + new String(date.getDate()).padStart(2, "0") + " "
+              + new String(date.getHours()).padStart(2, "0") + ":"
+              + new String(date.getMinutes()).padStart(2, "0") + ":"
+              + new String(date.getSeconds()).padStart(2, "0") + " ";
+
+  var tzOffset = date.getTimezoneOffset() / 60;
+
+  if (tzOffset >= 0) {
+    str += "+";
+  }
+
+  str += new String(tzOffset * 100).padStart(4, "0");
+           
+
+  return str;
+}
+
+
+
+
+function addStepsToPlot ( feedItems ) {
+
+  console.log("addStepsToPlot");
+
+
+  var items = feedItems.map(function (item) {
+     var startDate = startOfDay(item.date);
+     var group = groupFor("steps");
+
+     return {
+       x: startDate,
+       y: item.steps / 8, // fixme: normalize over 1440 seconds
+       group: group,
+       id: "steps-" + item.date
+     };
+  });
+
+  dataset.update( items );
+}
+
+
+function addTvToPlot ( feedItems ) {
+
+  console.log("addTvToPlot");
+
+
+  var items = feedItems.map(function (item) {
+     var startDate = startOfDay(item.date);
+     var group = item.state ? groupFor("tv-on") : groupFor("tv-off");
+
+     return {
+       x: startDate,
+       y: (item.date - startDate) / (1000 * 60),
+       group: group
+     };
+  });
+
+  dataset.add( items );
+}
+
+
+
+function splitString(string, delimiter, n) {
+    var parts = string.split(delimiter);
+    return parts.slice(0, n - 1).concat([parts.slice(n - 1).join(delimiter)]);
+}
+
+</script>
+<!--
+<script defer data-domain="cityapper.com" src="https://pa.cityapper.com/js/plausible.js"></script>
+-->
+  <script src="vis-timeline-graph2d.min.js"></script>
+  <link href="vis-timeline-graph2d.min.css" rel="stylesheet" type="text/css" />
+
+  <script src="suncalc.js"></script>
+
+  </head>
+  <body>
+
+<script>
+
+function importAuthorSubmitted( form ) {
+  console.log("submitted:");
+
+  console.log(form);
+}
+
+var authors = {
+  "HarlanJI": "https://harlanji.com/bed.xml",
+  "Marty": "https://harlanji.com/bed-marty.xml"
+}
+
+function populateAuthors () {
+  var authorsElem = document.querySelector("#author");
+
+  while(authorsElem.lastChild) {
+    authorsElem.removeChild(authorsElem.lastChild);
+  }
+
+  Object.entries(authors).forEach(function (e, i) {
+    var option = document.createElement("option");
+    option.value = e[1];
+    option.textContent = e[0];
+
+    if ( i == 0 ) {
+      option.selected = "selected";
+    }
+
+    authorsElem.appendChild(option);
+
+    console.log(e);
+  });
+
+  authorsElem.dispatchEvent(new Event('change'));
+}
+
+function startOfDay (date) {
+  var startDate = new Date(date);
+
+  startDate.setHours(0);
+  startDate.setMinutes(0);
+  startDate.setSeconds(0);
+  startDate.setMilliseconds(0);
+
+  return startDate;
+}
+
+
+
+</script>
+
+<h1>Author Made Bed</h1>
+
+
+
+<form id="import-author" action="#" onsubmit="console.log('s')">
+<p>
+Author:
+<select id="author" onchange="importRssFeed(this.options[this.selectedIndex].value)">
+</select>
+
+</p>
+</form>
+
+<div style="position: relative; height: 465px;">
+  <div style="position: absolute; top: 0; left: 0; width: 100%;">
+    <div id="visualization3" style=""></div>
+  </div>
+
+  <div style="position: absolute; top: 0; left: 0; width: 100%">
+    <div id="visualization"></div>
+  </div>
+</div>
+
+<div id="visualization2"></div>
+
+<table id="bed-makings">
+  <thead>
+    <tr>
+      <th>Date Time</th>
+      <th>#</th>
+      <th>Note</th>
+    </tr>
+  </thead>
+  <tbody>
+  </tbody>
+</table>
+
+<p>This data will sync both directions with dataset:</p>
+<textarea id="data" style="width:100%; height: 400px;">
+[
+{id: 1,
+ x: '2021-01-01',
+ end: '2021-12-31',
+ group: 2,
+ y: 750,
+ content: 'credit 1'
+ }
+]
+
+</textarea>
+<p style="color: green">
+Syntax is valid.
+</p>
+<p>
+<input name="autosync" type="checkbox"> Auto-save upon blur.
+</p>
+
+<p>
+<span><input name="format" type="radio" value="json" checked> JSON</span>
+<span><input name="format" type="radio" value="edn"> EDN</span>
+</p>
+
+<script>
+
+//importRssFeed( document.querySelector("#author").value );
+
+populateAuthors();
+initDataset();
+
+</script>
+
+  </body>
+</html>

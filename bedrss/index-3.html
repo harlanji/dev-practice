@@ -1,0 +1,295 @@
+<html>
+  <head>
+
+<script>
+
+function importRssFeed (feedUrl) {
+
+  var rssRequest = new XMLHttpRequest();
+
+
+  rssRequest.onreadystatechange = function (e) {
+    var r = rssRequest;
+    if (r.readyState == XMLHttpRequest.DONE) {
+      if (r.status >= 200 && r.status < 300) {
+        console.log("Got RSS (" + r.status + "): ");
+
+        var items = importRSSDoc(r.responseXML);
+        populateItems( items );
+        createPlot( items );
+      }
+    }
+  };
+
+  //rssRequest.open("GET", "bed-harlanji.xml");
+
+  rssRequest.open("GET", feedUrl);
+  rssRequest.send();
+
+}
+
+function importRSSDoc( rssDoc ) {
+  console.log("importRSSDoc:");
+  console.log( rssDoc );
+
+  //var author = rssDoc.querySelector("generator").textContent.trim();
+
+  var items = Array.from( rssDoc.querySelectorAll("item") );
+  items = items.map(function (i) {
+    var item = {
+      title: i.querySelector("title").textContent.trim(),
+      date: new Date( i.querySelector("pubDate").textContent.trim() ),
+      description: i.querySelector("description").textContent.trim()
+    };
+
+    var occurenceParts = splitString( item.description, ":", 2);
+
+
+    item.occurence = parseInt( occurenceParts[0] ) || 1;
+    item.occurenceNote = occurenceParts[1].trim();
+
+    if (item.occurenceNote == "") {
+      item.occurenceNote = "Morning routine";
+    }
+
+    return item;
+  });
+
+
+  items = items.sort(function (a, b) {
+    return b.date - a.date;
+  });
+
+  console.log("items:");
+  console.log(items);
+
+  return items;
+}
+
+
+function populateItems( items ) {
+  console.log("populateItems");
+  console.log( items );
+
+  var rows = items.map(function (item) {
+    var row = document.createElement( "tr" );
+    var date = document.createElement( "td" );
+    var occurence = document.createElement( "td" );
+    var note = document.createElement( "td" );
+
+    date.textContent = dateString( item.date );
+    occurence.textContent = item.occurence;
+    note.textContent = item.occurenceNote;
+
+    row.appendChild( date );
+    row.appendChild( occurence );
+    row.appendChild( note );
+
+    return row;
+  });
+
+  var tableBody = document.querySelector("#bed-makings tbody");
+  console.log("populate: ");
+  console.log(tableBody);
+  console.log(rows);
+
+  while (tableBody.lastChild) {
+    tableBody.removeChild(tableBody.lastChild);
+  }
+
+  rows.forEach(function (row) {
+    tableBody.appendChild(row);
+  });
+}
+
+function dateString (date) {
+//  return "d: " + date;
+
+  var str = (date.getYear() + 1900) + "-"
+              + new String(date.getMonth() + 1).padStart(2, "0") + "-"
+              + new String(date.getDate()).padStart(2, "0") + " "
+              + new String(date.getHours()).padStart(2, "0") + ":"
+              + new String(date.getMinutes()).padStart(2, "0") + ":"
+              + new String(date.getSeconds()).padStart(2, "0") + " ";
+
+  var tzOffset = date.getTimezoneOffset() / 60;
+
+  if (tzOffset >= 0) {
+    str += "+";
+  }
+
+  str += new String(tzOffset * 100).padStart(4, "0");
+           
+
+  return str;
+}
+
+
+function splitString(string, delimiter, n) {
+    var parts = string.split(delimiter);
+    return parts.slice(0, n - 1).concat([parts.slice(n - 1).join(delimiter)]);
+}
+
+</script>
+
+<script defer data-domain="cityapper.com" src="https://pa.cityapper.com/js/plausible.js"></script>
+
+  <script src="vis-timeline-graph2d.min.js"></script>
+  <link href="vis-timeline-graph2d.min.css" rel="stylesheet" type="text/css" />
+
+  <script src="suncalc.js"></script>
+
+  </head>
+  <body>
+
+<script>
+
+function importAuthorSubmitted( form ) {
+  console.log("submitted:");
+
+  console.log(form);
+}
+
+var authors = {
+  "HarlanJI": "https://harlanji.com/bed.xml",
+  "Marty": "https://harlanji.com/bed-marty.xml"
+}
+
+function populateAuthors () {
+  var authorsElem = document.querySelector("#author");
+
+  while(authorsElem.lastChild) {
+    authorsElem.removeChild(authorsElem.lastChild);
+  }
+
+  Object.entries(authors).forEach(function (e, i) {
+    var option = document.createElement("option");
+    option.value = e[1];
+    option.textContent = e[0];
+
+    if ( i == 0 ) {
+      option.selected = "selected";
+    }
+
+    authorsElem.appendChild(option);
+
+    console.log(e);
+  });
+
+  authorsElem.dispatchEvent(new Event('change'));
+}
+
+function startOfDay (date) {
+  var startDate = new Date(date);
+
+  startDate.setHours(0);
+  startDate.setMinutes(0);
+  startDate.setSeconds(0);
+  startDate.setMilliseconds(0);
+
+  return startDate;
+}
+
+
+function createPlot ( feedItems ) {
+
+  console.log("createPlot");
+
+
+  var container = document.getElementById('visualization');
+
+  while( container.lastChild ) {
+    container.removeChild( container.lastChild );
+  }
+
+
+  var items = feedItems.map(function (item) {
+     var startDate = startOfDay(item.date);
+
+     return {
+       x: startDate,
+       y: (item.date - startDate) / (1000 * 60),
+       group: 0
+     };
+  });
+
+  // feed items are in descending order
+  var firstDate = startOfDay( feedItems[ feedItems.length - 1 ].date );
+  var lastDate = startOfDay( feedItems[ 0 ].date );
+
+  var firstTimes = SunCalc.getTimes(firstDate, 44.986656, -93.258133)
+  var lastTimes = SunCalc.getTimes(lastDate, 44.986656, -93.258133)
+  
+  items.push({x: firstDate,
+             y: (firstTimes.sunrise - firstDate) / (1000 * 60),
+             group: 1});
+
+  items.push({x: lastDate,
+             y: (lastTimes.sunrise - lastDate) / (1000 * 60),
+             group: 1});
+
+  var dataset = new vis.DataSet(items);
+  var options = {
+      sort: false,
+      sampling:false,
+      style:'points',
+      dataAxis: {
+          left: {
+              range: {
+                  min: 0, max: (60 * 24)
+              }
+          }
+      },
+      drawPoints: {
+          enabled: true,
+          size: 6,
+          style: 'circle' // square, circle
+      },
+      defaultGroup: 'Scatterplot',
+      height: '400px',
+      width: '90%'
+  };
+  var graph2d = new vis.Graph2d(container, dataset, options);
+
+
+}
+
+
+</script>
+
+<h1>Author Made Bed</h1>
+
+<form id="import-author" action="#" onsubmit="console.log('s')">
+<p>
+Author:
+<select id="author" onchange="importRssFeed(this.options[this.selectedIndex].value)">
+</select>
+
+</p>
+</form>
+
+<div id="visualization"></div>
+
+<table id="bed-makings">
+  <thead>
+    <tr>
+      <th>Date Time</th>
+      <th>#</th>
+      <th>Note</th>
+    </tr>
+  </thead>
+  <tbody>
+  </tbody>
+</table>
+
+
+<script>
+
+//importRssFeed( document.querySelector("#author").value );
+
+populateAuthors();
+
+</script>
+
+  </body>
+</html>
