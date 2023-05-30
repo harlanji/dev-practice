@@ -1,0 +1,6 @@
+wagtail==4.2.4
+django-auditlog==2.3.0
+wagtailembedpeertube==0.2.0
+wagtailmedia==0.13.0
+coderedcms==2.1.2
+wagtail-generic-chooser==0.5.1
