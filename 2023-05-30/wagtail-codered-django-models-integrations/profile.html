@@ -1,0 +1,62 @@
+{% extends "coderedcms/pages/web_page.html" %}
+{% load static %}
+
+{% load wagtailcore_tags %}
+
+{% block index_content %}
+
+<h2>
+  PROFILE PAGE
+</h2>
+
+
+<div>
+  {% with media=page.featured_media %}
+    <{{ media.type }} controls poster="{{ media.thumbnail.url }}">
+      {% for source in media.sources %}
+        <source src="{{ source.src }}" type="{{ source.type }}" />
+      {% endfor %}
+    </{{ media.type }}>
+  {% endwith %}
+</div>
+
+<div>
+  {{ page.intro|richtext }}
+</div>
+
+<p>
+  
+User Id: {{ user_id }}
+
+<p>
+  
+Is Me: {{ is_me }}
+  
+  {{ block.super }}
+
+<h3>1: from page</h3>
+
+<p>Live? {{ page.live }}</p>
+<p>Preview? {{ page.preview }}</p>
+
+<ul>
+{% for tweet in tweets %}
+	<li><a href="https://twitter.com/x/status/{{ tweet.id }}">{{tweet.text}}</a></li>
+{% endfor %}
+</ul>
+
+<h3>2: from block value</h3>
+
+{% for block in page.intro2 %}
+	{% if block.block_type == 'tweet_query_block' %}
+		{{ block }}
+		
+		tweets = {{ block.value.tweets }}
+	{% endif %}
+{% endfor %}
+
+<h3>3: generic block rendering</h3>
+
+{{ page.intro2 }}
+
+{% endblock %}
